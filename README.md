@@ -4,9 +4,9 @@
 ---
 
 ### 👤 Author
-**Name:** Leonardo Granados, 
-**Group:** 7
-**Course:** CS4470 – Computer Networks
+# **Name:** Leonardo Granados, 
+# **Group:** 7
+# **Course:** CS4470 – Computer Networks
 
 ---
 
