@@ -3,9 +3,8 @@
 -Leonardo Granados, 
 -CS 4470
 -Programming Assignment #1 Remote Chat
--9/17/28
+-9/17/25
 """
-
 
 import socket
 import sys
@@ -15,8 +14,19 @@ connections = []   #initalize array to hold [ (id, sock, ip, port) ]
 
 #LG
 #Function #4 Connect -establishes a new TCP connection
-def connect_to(ip, port):
+def connect_to(ip, port, self_p):       #takes user ip, port, uses global self_p to hold self port
     s = socket.socket()     #create the socket
+
+    selfIP = socket.gethostbyname(socket.gethostname())     #checks ip addr
+    if selfIP == ip and self_p == port:        #if statement to prevent self connections
+        print("Connection error: Self connection is not allowed")
+        return
+    
+    for _,_,ip_i,port_i in connections:
+        if ip_i == ip and port_i == port:
+            print("Connection error: Duplicate connections is not allowed")
+            return
+    
     try:
         s.connect((ip, port))       #connect using user input for ip and port
         connections.append((len(connections)+1, s, ip, port))       #adds connections to array
@@ -36,6 +46,8 @@ def recv_from(sock, ip, port):
                     if i[2] == ip and i[3] == port:
                         print(f"[info] Connection closed with {ip}:{port} \n[chat> ", end="")
                         connections.remove(i)
+                        for i, p in enumerate(connections, start=1):  #goes through the array and changes the id to new reflection
+                            connections[i-1] = (i, p[1], p[2], p[3])
                 break
         except: 
             break
@@ -59,6 +71,8 @@ def terminate(pid):
             i[1].close()        #closes the socket connections and removes it from the array
             connections.remove(i)
             print(f"[chat> Terminated {i[2]}:{i[3]}")
+            for i, p in enumerate(connections, start=1):    #goes through connections array and changes ids to show new reflection
+                connections[i-1] = (i, p[1], p[2], p[3])
             return
     print("[chat> Invalid id")  #notifies user of error
 
@@ -83,6 +97,8 @@ if __name__ == "__main__":
         print("[chat> Missing open port. try ex: ./chat 4545")
         sys.exit(1)
 
+    self_p = int(sys.argv[1])
+
     #using threading to start the server function
     threading.Thread(target=server, args=(int(sys.argv[1]),), daemon=True).start()
 
@@ -92,7 +108,7 @@ if __name__ == "__main__":
         if not cmd: 
             continue
         if cmd[0]=="connect" and len(cmd)==3:           #4 if connect is selected runs connect function
-            connect_to(cmd[1], int(cmd[2]))
+            connect_to(cmd[1], int(cmd[2]), self_p)
         elif cmd[0]=="list":                            #5 if list is selected runs the list function
             list_connections()
         elif cmd[0]=="terminate" and len(cmd)==2:       #6 if terminated is selected runs the terminated function
