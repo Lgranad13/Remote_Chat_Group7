@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
--Leonardo Granados, 
+-Leonardo Granados, Isaiah Villalobos
 -CS 4470
 -Programming Assignment #1 Remote Chat
 -9/17/25
@@ -11,6 +11,55 @@ import sys
 import threading
 
 connections = []   #initalize array to hold [ (id, sock, ip, port) ]
+LISTEN_PORT = None   # remember which port our server listens on
+
+#IV
+#Function #1 Help - Displays info about the available user interface options or command manual.
+def show_help():
+    print(
+        "Available commands:\n"
+        "  help                          Show this help message\n"
+        "  connect <ip> <port>           Open a TCP connection to a peer\n"
+        "  list                          List active connections (id: ip:port)\n"
+        "  terminate <id>                Close the connection by its id\n"
+        "  myip                          Display this process's IP (non-127.*)\n"
+        "  myport                        Display the port this process is listening on\n"
+    )
+
+#IV
+#Function #2 Myip - Displays the IP address of this process. IP isn't local address. 
+def get_my_ip():
+    ip = "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # No packets are sent; this just asks the OS which interface would be used
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    except Exception:
+        pass
+    finally:
+        try:
+            s.close()
+        except Exception:
+            pass
+
+    # Fallbacks in case the above still yields loopback
+    if ip.startswith("127."):
+        try:
+            ip = socket.gethostbyname(socket.gethostname())
+        except Exception:
+            pass
+
+    if ip.startswith("127."):
+        try:
+            for fam, _, _, _, sockaddr in socket.getaddrinfo(socket.gethostname(), None):
+                if fam == socket.AF_INET and not sockaddr[0].startswith("127."):
+                    ip = sockaddr[0]
+                    break
+        except Exception:
+            pass
+
+    return ip
 
 #LG
 #Function #4 Connect -establishes a new TCP connection
@@ -97,10 +146,8 @@ if __name__ == "__main__":
         print("[chat> Missing open port. try ex: ./chat 4545")
         sys.exit(1)
 
-    self_p = int(sys.argv[1])
-
-    #using threading to start the server function
-    threading.Thread(target=server, args=(int(sys.argv[1]),), daemon=True).start()
+    LISTEN_PORT = int(sys.argv[1])
+    threading.Thread(target=server, args=(LISTEN_PORT,), daemon=True).start()
 
     #while loop to keep checking for user input
     while True:
@@ -108,7 +155,13 @@ if __name__ == "__main__":
         if not cmd: 
             continue
         if cmd[0]=="connect" and len(cmd)==3:           #4 if connect is selected runs connect function
-            connect_to(cmd[1], int(cmd[2]), self_p)
+            connect_to(cmd[1], int(cmd[2]))
+        elif cmd[0] == "help":                          #1 if help is selected runs help function
+            show_help()
+        elif cmd[0] == "myip":                          #2 if myip is selected runs myip function
+            print(get_my_ip())
+        elif cmd[0] == "myport":
+            print(LISTEN_PORT)
         elif cmd[0]=="list":                            #5 if list is selected runs the list function
             list_connections()
         elif cmd[0]=="terminate" and len(cmd)==2:       #6 if terminated is selected runs the terminated function
