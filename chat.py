@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
--Leonardo Granados, Isaiah Villalobos
+-Leonardo Granados, Isaiah Villalobos, Cooper Palmer
 -CS 4470
 -Programming Assignment #1 Remote Chat
 -9/17/25
@@ -25,6 +25,8 @@ def show_help():
         "  terminate <id>                Close the connection by its id\n"
         "  myip                          Display this process's IP (non-127.*)\n"
         "  myport                        Display the port this process is listening on\n"
+        "  send <id> <message>           Send a message (<= 100 chars) to a peer\n"     
+        "  exit                          Close all connections and terminate\n"              
     )
 
 #IV
@@ -109,7 +111,23 @@ def recv_from(sock, ip, port):
             data = sock.recv(1024)      #while loop to check if data connection is still live
             if not data:        #if data is not alive checks connections array to remove and notify user of it closing
                 
-                break
+                break                
+            try:
+                msg = data.decode(errors="ignore")
+            except Exception:
+                msg = ""
+            if msg.startswith("MSG|"):
+                parts = msg.split("|", 2)
+                if len(parts) == 3 and parts[1].isdigit():
+                    sender_listen_port = int(parts[1])
+                    body = parts[2]
+                else:
+                    sender_listen_port = port
+                    body = msg
+                print(f"Message received from {ip}")
+                print(f"Sender's Port: {sender_listen_port}")
+                print(f"Message: \"{body}\"")
+                print("[chat> ", end="")
         except: 
             break
     
@@ -123,13 +141,39 @@ def recv_from(sock, ip, port):
 
     sock.close()        #closes the socket
     
+def send_message(pid, text):
+    # Enforce <=100 chars as per spec
+    if len(text) > 100:
+        print("[chat> Message too long (max 100 chars).")
+        return
+    for entry in connections:
+        if entry[0] == pid:
+            try:
+                # include our listening port so receiver can print it
+                payload = f"MSG|{LISTEN_PORT}|{text}".encode()
+                entry[1].sendall(payload)
+                print(f"[chat> Message sent to {pid}")
+            except Exception as e:
+                print(f"[chat> Send failed: {e}")
+            return
+    print("[chat> Invalid id")
+
+def exit_program():
+    for _, s, _, _ in list(connections):
+        try:
+            s.close()
+        except Exception:
+            pass
+    connections.clear()
+    print("Exiting.")
+    sys.exit(0)
 
 #LG
 #Function #5 -display the IP address and the listening port of all the connections the process is connected to
 def list_connections():
     if not connections:       #lets user know if nothing is connected
         print("[chat> No connections live.")
-    else:               #lets user know of all connections avialabe for chat
+    else:               #lets user know of all connections available for chat
         print(f"    id:  IP address       Port No.")
         for pid, _, ip, port in connections:
             print(f"    {pid}:  {ip}     {port}")
@@ -138,7 +182,7 @@ def list_connections():
 #Function #6 terminate the connection listed under the specified number
 def terminate(pid):
     for i in connections:       #for loop to go through connections array
-        if i[0] == pid:         #grabs the id that user inputted and checks if it avialable
+        if i[0] == pid:         #grabs the id that user inputted and checks if it available
             i[1].close()        #closes the socket connections and removes it from the array
             print(f"[chat> Terminated {i[2]}:{i[3]}")
 
@@ -196,4 +240,15 @@ if __name__ == "__main__":
             list_connections()
         elif cmd[0]=="terminate" and len(cmd)==2:       #6 if terminated is selected runs the terminated function
             terminate(int(cmd[1]))
+        elif cmd[0]=="send" and len(cmd)>=3:            #7 if id is correct sends message
+            try:
+                pid = int(cmd[1])
+            except ValueError:
+                print("[chat> Invalid id")
+                continue
+            message = ' '.join(cmd[2:])
+            send_message(pid, message)
+        elif cmd[0]=="exit":                            #8 if exit is selected exits 
+            exit_program()
+        
         else: print("Command does not exist. Please type - help - for commands")  #to let user know command doesn't exist
