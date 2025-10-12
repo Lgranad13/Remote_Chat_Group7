@@ -4,6 +4,7 @@
 -CS 4470
 -Programming Assignment #1 Remote Chat
 -9/17/25
+github repo: https://github.com/Lgranad13/Remote_Chat_Group7
 """
 
 import socket
@@ -70,6 +71,7 @@ def connect_to(ip, port, LISTEN_PORT):       #takes user ip, port, uses global L
     s = socket.socket()     #create the socket
 
     self_IP = get_my_ip()     #checks ip addr
+
     if self_IP == ip and LISTEN_PORT == port:        #if statement to prevent self connections
         print("Connection error: Self connection is not allowed")
         return
@@ -79,7 +81,7 @@ def connect_to(ip, port, LISTEN_PORT):       #takes user ip, port, uses global L
             print("Connection error: Duplicate connections is not allowed")
             return
         
-    if len(connections) == MAX_USERS:       #if statement to limit connections to 3 max
+    if len(connections) >= MAX_USERS:       #if statement to limit connections to 3 max
         print("Connection error: Reached Max of 3 connections, please terminate one before trying to connect again")
         s.close()
         return
@@ -91,7 +93,7 @@ def connect_to(ip, port, LISTEN_PORT):       #takes user ip, port, uses global L
         try:
             server_msg = s.recv(1024) #check if server sent a message
             if server_msg: #if there is data
-                print(server_msg.decode().strip())  # Prints connection error server full ...
+                print(server_msg.decode().strip())  # prints connection error server full ...
                 s.close()  # closes the socket
                 return
         except socket.timeout: #if it times out continues
@@ -109,8 +111,7 @@ def recv_from(sock, ip, port):
     while True:
         try:
             data = sock.recv(1024)      #while loop to check if data connection is still live
-            if not data:        #if data is not alive checks connections array to remove and notify user of it closing
-                
+            if not data:        #if data is not alive checks connections array to remove and notify user of it closing 
                 break                
             try:
                 msg = data.decode(errors="ignore")
@@ -126,8 +127,7 @@ def recv_from(sock, ip, port):
                     body = msg
                 print(f"Message received from {ip}")
                 print(f"Sender's Port: {sender_listen_port}")
-                print(f"Message: \"{body}\"")
-                print("[chat> ", end="")
+                print(f"Message: \"{body}\" \n[chat> ", end="")
         except: 
             break
     
@@ -183,6 +183,7 @@ def list_connections():
 def terminate(pid):
     for i in connections:       #for loop to go through connections array
         if i[0] == pid:         #grabs the id that user inputted and checks if it available
+            i[1].shutdown(socket.SHUT_RDWR) #closes socket for linux
             i[1].close()        #closes the socket connections and removes it from the array
             print(f"[chat> Terminated {i[2]}:{i[3]}")
 
@@ -196,6 +197,7 @@ def terminate(pid):
 #Server function that is listening to make connections
 def server(port):
     s = socket.socket()
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1) #fixes linux issue when trying to use reuse a closed port
     s.bind(('', port))
     s.listen()
     print(f"Listening on port {port}\n[chat> ", end="")
