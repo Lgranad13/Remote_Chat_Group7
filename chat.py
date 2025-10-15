@@ -140,33 +140,6 @@ def recv_from(sock, ip, port):
                             connections[i-1] = (i, p[1], p[2], p[3])
 
     sock.close()        #closes the socket
-    
-def send_message(pid, text):
-    # Enforce <=100 chars as per spec
-    if len(text) > 100:
-        print("[chat> Message too long (max 100 chars).")
-        return
-    for entry in connections:
-        if entry[0] == pid:
-            try:
-                # include our listening port so receiver can print it
-                payload = f"MSG|{LISTEN_PORT}|{text}".encode()
-                entry[1].sendall(payload)
-                print(f"[chat> Message sent to {pid}")
-            except Exception as e:
-                print(f"[chat> Send failed: {e}")
-            return
-    print("[chat> Invalid id")
-
-def exit_program():
-    for _, s, _, _ in list(connections):
-        try:
-            s.close()
-        except Exception:
-            pass
-    connections.clear()
-    print("Exiting.")
-    sys.exit(0)
 
 #LG
 #Function #5 -display the IP address and the listening port of all the connections the process is connected to
