@@ -36,7 +36,7 @@ The program allows users to:
 | **4** | **connect `<ip>` `<port>`** | Establish a new TCP connection to the given peer |
 | **5** | **list** | Display all active peer connections with IDs, IPs, and ports |
 | **6** | **terminate `<id>`** | Close the connection identified by the given ID |
-| **7** | **send `<id>` <msg>** | Sends a message to choosen connected peer |
+| **7** | **send `<id>` `<msg>`** | Sends a message to choosen connected peer |
 | **8** | **exit** | Exit program and closes all connections |
 
 ---
