@@ -12,7 +12,7 @@ import sys
 import threading
 
 connections = []   #initalize array to hold [ (id, sock, ip, port) ]
-MAX_USERS = 3
+MAX_USERS = 3       #intialize constant max user
 LISTEN_PORT = None   # remember which port our server listens on
 
 #IV
@@ -166,6 +166,37 @@ def terminate(pid):
     
     print("[chat> Invalid id")  #notifies user of error
 
+#CP
+#Function #7 sends a message to selected connected id
+def send_message(pid, text):
+    # Enforce <=100 chars as per spec
+    if len(text) > 100:
+        print("[chat> Message too long (max 100 chars).")
+        return
+    for entry in connections:
+        if entry[0] == pid:
+            try:
+                # include our listening port so receiver can print it
+                payload = f"MSG|{LISTEN_PORT}|{text}".encode()
+                entry[1].sendall(payload)
+                print(f"[chat> Message sent to {pid}")
+            except Exception as e:
+                print(f"[chat> Send failed: {e}")
+            return
+    print("[chat> Invalid id")
+
+#CP
+#Function #8 terminates all connections when exiting from program
+def exit_program():
+    for _, s, _, _ in list(connections):
+        try:
+            s.close()
+        except Exception:
+            pass
+    connections.clear()
+    print("Exiting.")
+    sys.exit(0)
+
 #LG
 #Server function that is listening to make connections
 def server(port):
@@ -203,19 +234,19 @@ if __name__ == "__main__":
         cmd = input("[chat> ").split() #grabs the user input, splits it and puts it into array cmd
         if not cmd: 
             continue
-        if cmd[0]=="connect" and len(cmd)==3:           #4 if connect is selected runs connect function
-            connect_to(cmd[1], int(cmd[2]), LISTEN_PORT)
-        elif cmd[0] == "help":                          #1 if help is selected runs help function
+        if cmd[0] == "help":                                #1 if help is selected runs help function
             show_help()
-        elif cmd[0] == "myip":                          #2 if myip is selected runs myip function
+        elif cmd[0] == "myip":                              #2 if myip is selected runs myip function
             print(get_my_ip())
-        elif cmd[0] == "myport":
+        elif cmd[0] == "myport":                            #3 if myport is selcted users listening port is displayed
             print(LISTEN_PORT)
-        elif cmd[0]=="list":                            #5 if list is selected runs the list function
+        elif cmd[0]=="connect" and len(cmd)==3:             #4 if connect is selected runs connect function
+            connect_to(cmd[1], int(cmd[2]), LISTEN_PORT)
+        elif cmd[0]=="list":                                #5 if list is selected runs the list function
             list_connections()
-        elif cmd[0]=="terminate" and len(cmd)==2:       #6 if terminated is selected runs the terminated function
+        elif cmd[0]=="terminate" and len(cmd)==2:           #6 if terminated is selected runs the terminated function
             terminate(int(cmd[1]))
-        elif cmd[0]=="send" and len(cmd)>=3:            #7 if id is correct sends message
+        elif cmd[0]=="send" and len(cmd)>=3:                #7 if id is correct sends message
             try:
                 pid = int(cmd[1])
             except ValueError:
@@ -223,7 +254,7 @@ if __name__ == "__main__":
                 continue
             message = ' '.join(cmd[2:])
             send_message(pid, message)
-        elif cmd[0]=="exit":                            #8 if exit is selected exits 
+        elif cmd[0]=="exit":                                #8 if exit is selected exits 
             exit_program()
         
         else: print("Command does not exist. Please type - help - for commands")  #to let user know command doesn't exist
